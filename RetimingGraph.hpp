@@ -3,16 +3,58 @@
 #include <boost/graph/adjacency_list.hpp> 
 using namespace boost;
 
+
+// weightning for WD algorithm
+struct weightWD
+{
+	int we, du;
+
+	//weightWD(int we_, int du_) : we(we_), du(du_) {}
+	//weightWD() : we(0), du(0) {}
+
+	//bool operator < (const weightWD& other) const
+	//{
+	//	if (we < other.we) return true;
+	//	if (we == other.we && du < other.du) return true;
+	//
+	//	return false;
+	//}
+
+	//weightWD operator + (const weightWD& other) const
+	//{
+	//	weightWD res;
+	//	res.we = we + other.we;
+	//	res.du = du + other.du;
+	//
+	//	return res;
+	//}
+
+	bool operator == (const weightWD& other) const
+	{
+		return (we == other.we) && (du == other.du);
+	}
+
+	weightWD operator - (const weightWD& other) const
+	{
+		weightWD res;
+		res.we = we - other.we;
+		res.du = du - other.du;
+		
+		return res;
+	}
+};
+
 // Vertex bundle property
 struct VertexData
 {
-	unsigned int d;	// gate's delay
+	int d;	// gate's delay
 };
 
 // Edge bundle property
 struct EdgeData
 {
-	unsigned int w; // number of registers
+	int w; // number of registers
+	weightWD wwd;
 };
 
 
@@ -36,12 +78,14 @@ private:
 	RGraph g;
 
 public:
-	void addVertex(unsigned int d);
-	void addEdge(Vertex_d src, Vertex_d dest, unsigned int w);
+	void addVertex(int d);
+	void addEdge(Vertex_d src, Vertex_d dest, int w);
 
 	void printEdges();
 
 	// Compute the clock period of a circuit
-	unsigned int CP(void);
+	int CP(void);
+	// Compute W and D
+	void WD(int **W, int **D);
 };
 

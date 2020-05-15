@@ -12,6 +12,7 @@ typedef boost::adjacency_list<vecS, vecS, directedS> mygraph;
 int main()
 {
     RetimingGraph rg;
+    // Correlator 1 (Figure 3, pag 5)
     rg.addVertex(0); // Vh
     rg.addVertex(3); // V1
     rg.addVertex(3); // V2
@@ -32,9 +33,10 @@ int main()
     rg.addEdge(6, 7, 0);
     rg.addEdge(7, 0, 0);
     
-    rg.printEdges();
-    cout << "filtered\n\n";
-    cout << "CP: " << rg.CP() << endl;;
+    //rg.printEdges();
+    //cout << "filtered\n\n";
+    //cout << "CP: " << rg.CP() << endl;
+    rg.WD(nullptr, nullptr);
     
 
     return 0;
