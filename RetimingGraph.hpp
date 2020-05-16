@@ -54,9 +54,15 @@ struct VertexData
 struct EdgeData
 {
 	int w; // number of registers
-	weightWD wwd;
+	weightWD wwd; // used in WD algorithm
 };
 
+// Struct which contains (u, v, D(u, v))
+// Used in OPT1 algorithm to sort D matrix and perform binary search on it
+struct dElements
+{
+	int src, dest, D;
+};
 
 // the graph is directed, but I use bidirectional so that I can use "in_edges" in CP algorithm
 using RGraph = adjacency_list<vecS, vecS, bidirectionalS, VertexData, EdgeData>;
@@ -83,12 +89,21 @@ public:
 	void addEdge(Vertex_d src, Vertex_d dest, int w);
 
 	void printGraph();
+	// Given a retiming r: V -> Z, it applies it to the graph
+	// If undo == true it undoes the retiming
+	void applyRetiming(const std::vector<int>& r, bool undo = false);
 
 	// Compute the clock period of a circuit
-	int CP(void);
+	int CP(std::vector<int>& delta);
 	// Compute W and D
 	void WD(int **W, int **D);
-	// Clocl period minimization
-	void OPT1(void);
+	// Clock period minimization
+	void OPT(bool opt = true);
+	// Feasible clock period test
+	std::vector<int> FEAS(int c);
+	// OPT1
+	std::vector<int> OPT1(int **W, int **D, std::vector<dElements>& dE, bool cmp(dElements first, dElements second));
+	// OPT2
+	std::vector<int> OPT2(int** W, int** D, std::vector<dElements>& dE);
 };
 

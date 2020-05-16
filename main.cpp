@@ -31,9 +31,10 @@ int main()
     rg.addEdge(6, 7, 0);
     rg.addEdge(7, 0, 0);
 
-    cout << "CP: " << rg.CP() << endl;
-    rg.OPT1();
-    cout << "Retimied CP: " << rg.CP() << endl << endl;
+    std::vector<int> dummy;
+    cout << "CP: " << rg.CP(dummy) << endl;
+    rg.OPT(false);
+    cout << "Retimed CP: " << rg.CP(dummy) << endl << endl;
     rg.printGraph();
     
 
