@@ -1,13 +1,13 @@
 #include <boost/graph/filtered_graph.hpp>
 #include <boost/graph/graph_utility.hpp>
 #include <boost/graph/topological_sort.hpp>
-#include <boost/graph/graph_utility.hpp>
 #include <boost/graph/johnson_all_pairs_shortest.hpp>
 
 #include "RetimingGraph.hpp"
 
 #include <iostream>
 #include <iterator>
+#include <algorithm>
 #include <vector>
 
 using std::cout; using std::endl;
@@ -29,29 +29,26 @@ private:
 	RGraph* g;
 };
 
+// Struct which contains (u, v, D(u, v))
+// Used in OPT1 algorithm to sort D matrix and perform binary search on it
+struct dElements
+{
+	int src, dest, D;
+};
+
 void RetimingGraph::addVertex(int d)
 {
-	add_vertex(VertexData{ d }, g);
+	add_vertex(VertexData{ d }, originalGraph);
 }
 
 void RetimingGraph::addEdge(Vertex_d src, Vertex_d dest, int w)
 {
-	add_edge(src, dest, EdgeData{ w }, g);
+	add_edge(src, dest, EdgeData{ w }, originalGraph);
 }
 
-void RetimingGraph::printEdges()
+void RetimingGraph::printGraph()
 {
-	vertexIt vStart, vEnd;
-	adjacentIt aStart, aEnd;
-
-	for (tie(vStart, vEnd) = vertices(g); vStart != vEnd; ++vStart)
-	{
-		cout << *vStart << " is connected with ";
-		tie(aStart, aEnd) = adjacent_vertices(*vStart, g);
-		for (; aStart != aEnd; ++aStart)
-			cout << *aStart << " ";
-		cout << "\n";
-	}
+	print_graph(originalGraph);
 }
 
 /* Algorithm CP (page 7)
@@ -61,8 +58,7 @@ void RetimingGraph::printEdges()
 int RetimingGraph::CP(void)
 {	
 	// Step 1
-	filtered_graph<RGraph, ZeroEdgePredicate> filteredGraph(g, ZeroEdgePredicate(g));
-	print_graph(filteredGraph);
+	filtered_graph<RGraph, ZeroEdgePredicate> filteredGraph(originalGraph, ZeroEdgePredicate(originalGraph));
 
 	// Step 2
 	std::vector<Vertex_d> vertices;
@@ -74,17 +70,14 @@ int RetimingGraph::CP(void)
 	{
 		int maximum = 0;
 
-		cout << "\n\nVertice " << *v << "\nraggiunto da:" << endl;
-
 		graph_traits<decltype(filteredGraph)>::in_edge_iterator eStart, eEnd;
 		for (tie(eStart, eEnd) = in_edges(*v, filteredGraph); eStart != eEnd; ++eStart)
 		{
 			auto src = source(*eStart, filteredGraph);
 			maximum = std::max(maximum, delta[src]);
-			cout << src << '\t';
 		}
 
-		delta[*v] = g[*v].d + maximum;
+		delta[*v] = originalGraph[*v].d + maximum;
 	}
 
 	// Step 4
@@ -99,15 +92,15 @@ void RetimingGraph::WD(int** W, int** D)
 {
 	// Step 1
 	edgeIt eStart, eEnd;
-	for (tie(eStart, eEnd) = edges(g); eStart != eEnd; ++eStart)
+	for (tie(eStart, eEnd) = edges(originalGraph); eStart != eEnd; ++eStart)
 	{
-		auto d_src = g[source(*eStart, g)].d;
-		g[*eStart].wwd.we = g[*eStart].w;
-		g[*eStart].wwd.du = -d_src;
+		auto d_src = originalGraph[source(*eStart, originalGraph)].d;
+		originalGraph[*eStart].wwd.we = originalGraph[*eStart].w;
+		originalGraph[*eStart].wwd.du = -d_src;
 	}
 
 	// Step 2
-	int V = num_vertices(g);
+	int V = num_vertices(originalGraph);
 	weightWD** distance_matrix;
 	distance_matrix = (weightWD**) malloc(V * sizeof(*distance_matrix));
 	for (int i = 0; i < V; i++)
@@ -132,7 +125,7 @@ void RetimingGraph::WD(int** W, int** D)
 
 	const weightWD zero{ 0, 0 };
 	const weightWD inf{ std::numeric_limits<int>::max(), std::numeric_limits<int>::max() };
-	johnson_all_pairs_shortest_paths(g, distance_matrix, weight_map(get(&EdgeData::wwd, g)).
+	johnson_all_pairs_shortest_paths(originalGraph, distance_matrix, weight_map(get(&EdgeData::wwd, originalGraph)).
 									 distance_zero(zero).distance_inf(inf).
 									 distance_compare(cmp).distance_combine(plus));
 
@@ -142,11 +135,110 @@ void RetimingGraph::WD(int** W, int** D)
 		for (int j = 0; j < V; j++)
 		{
 			W[i][j] = distance_matrix[i][j].we;
-			D[i][j] = g[j].d - distance_matrix[i][j].du;
+			D[i][j] = originalGraph[j].d - distance_matrix[i][j].du;
 		}
 	}
 
 	for (int i = 0; i < V; i++)
 		free(distance_matrix[i]);
 	free(distance_matrix);
+}
+
+/* Algorithm OPT1 (page 14)
+ *
+ * Compute a legal retiming so to minimize the clock period
+*/
+void RetimingGraph::OPT1(void)
+{
+	// Step 1
+	int V = num_vertices(originalGraph);
+	int **W, **D;
+	W = (int**)malloc(V * sizeof(*W));
+	D = (int**)malloc(V * sizeof(*D));
+	for (int i = 0; i < V; i++)
+	{
+		W[i] = (int*)malloc(V * sizeof(**W));
+		D[i] = (int*)malloc(V * sizeof(**D));
+	}
+	WD(W, D);
+
+	// Step 2
+	std::vector<dElements> dE;
+	for (int i = 0; i < V; i++)
+		for (int j = 0; j < V; j++)
+			dE.push_back({ i, j, D[i][j] });
+
+	auto cmp = [](dElements first, dElements second)
+	{
+		return first.D < second.D;
+	};
+	std::sort(dE.begin(), dE.end(), cmp);
+	
+	// Step 3
+	std::vector<dElements>::iterator it;
+	for (it = dE.begin(); it != dE.end(); ++it)
+	{
+		constraintGraph.clear();
+
+		// STL's binary search is not suitable here beacuse it does not return a pointer
+		// to the maching elements, while upper_bound does (always in O(log n))
+		auto startRange = std::upper_bound(dE.begin(), dE.end(), *it, cmp); // returns iterator to first element greater than it->D
+		// add edge (v -> u) when D[u][v] > c
+		for (; startRange != dE.end(); ++startRange)
+			add_edge(startRange->dest, startRange->src, W[startRange->src][startRange->dest] - 1, constraintGraph);
+		
+		// add edge (v -> u) for every edge (u -> v) in original graph
+		edgeIt eStart, eEnd;
+		for (tie(eStart, eEnd) = edges(originalGraph); eStart != eEnd; ++eStart)
+		{
+			auto src = source(*eStart, originalGraph);
+			auto dest = target(*eStart, originalGraph);
+			int originalWeight = originalGraph[*eStart].w;
+
+			auto e = edge(dest, src, constraintGraph);
+			if (e.second) // if edge already exists in contraintGraph
+			{
+				int existingWeight = get(edge_weight_t(), constraintGraph, e.first);
+				put(edge_weight_t(), constraintGraph, e.first, std::min(existingWeight, originalWeight));
+			}
+			else
+			{
+				add_edge(dest, src, originalWeight, constraintGraph);
+			}
+		}
+
+		// add one more vertex with zero edges 
+		// lastVertex has the biggest vertex descriptor
+		auto lastVertex = add_vertex(constraintGraph);
+		for (int i = 0; i < lastVertex; i++)
+			add_edge(lastVertex, i, 0, constraintGraph);
+
+		// bellman_ford for constraintGraph (https://www.oreilly.com/library/view/vlsi-digital-signal/9780471241867/sec-4.3.html)
+		int VconstraintGraph = num_vertices(constraintGraph);
+		std::vector<int> distance(VconstraintGraph, std::numeric_limits<int>::max());
+		distance[lastVertex] = 0; // use lastVertex as the source at distance 0
+
+		// Step 4
+		if (bellman_ford_shortest_paths(constraintGraph, VconstraintGraph, distance_map(&distance[0])))
+		{
+			// apply retiming with clock period c = it->D to original graph
+			edgeIt eStart, eEnd;
+			for (tie(eStart, eEnd) = edges(originalGraph); eStart != eEnd; ++eStart)
+			{
+				auto src = source(*eStart, originalGraph);
+				auto dest = target(*eStart, originalGraph);
+				originalGraph[*eStart].w += distance[dest] - distance[src];
+			}
+
+			break;
+		}
+	}
+
+	for (int i = 0; i < V; i++)
+	{
+		free(W[i]);
+		free(D[i]);
+	}
+	free(W);
+	free(D);
 }

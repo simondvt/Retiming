@@ -59,7 +59,7 @@ struct EdgeData
 
 
 // the graph is directed, but I use bidirectional so that I can use "in_edges" in CP algorithm
-using RGraph = boost::adjacency_list<vecS, vecS, bidirectionalS, VertexData, EdgeData>;
+using RGraph = adjacency_list<vecS, vecS, bidirectionalS, VertexData, EdgeData>;
 // Vertex descriptor
 using Vertex_d = graph_traits<RGraph>::vertex_descriptor;
 // Edge descriptor
@@ -75,17 +75,20 @@ using adjacentIt = RGraph::adjacency_iterator;
 class RetimingGraph
 {
 private:
-	RGraph g;
+	RGraph originalGraph;
+	adjacency_list<vecS, vecS, directedS, no_property, property<edge_weight_t, int>> constraintGraph;
 
 public:
 	void addVertex(int d);
 	void addEdge(Vertex_d src, Vertex_d dest, int w);
 
-	void printEdges();
+	void printGraph();
 
 	// Compute the clock period of a circuit
 	int CP(void);
 	// Compute W and D
 	void WD(int **W, int **D);
+	// Clocl period minimization
+	void OPT1(void);
 };
 
