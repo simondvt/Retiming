@@ -235,6 +235,8 @@ std::vector<int> RetimingGraph::FEAS(int c) // std::vector has move-semantics, n
 		}
 	}
 	
+	applyRetiming(r);
+
 	// Step 3
 	std::vector<int> dummy;
 	if (CP(dummy) > c) // no feasible retiming exists
@@ -313,11 +315,13 @@ std::vector<int> RetimingGraph::OPT2(int** W, int** D, std::vector<dElements>& d
 	std::vector<int> r;
 
 	std::vector<dElements>::iterator it;
-	for (it = dE.begin(); it != dE.end(); ++it)
+	for (it = dE.begin(); it != dE.end(); ++it) // TODO: it mi da molte copie con stesso it->D, non necessarie qui
 	{
 		r = FEAS(it->D);
 		if (r.size() > 0)
+		{
 			return r;
+		}
 	}
 
 	return std::vector<int>();
