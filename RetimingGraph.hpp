@@ -89,6 +89,7 @@ public:
 	void addEdge(Vertex_d src, Vertex_d dest, int w);
 
 	void printGraph();
+	void saveDOT(std::string path);
 	// Given a retiming r: V -> Z, it applies it to the graph
 	// If undo == true it undoes the retiming
 	void applyRetiming(const std::vector<int>& r, bool undo = false);

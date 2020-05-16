@@ -36,6 +36,7 @@ int main()
     rg.OPT(false);
     cout << "Retimed CP: " << rg.CP(dummy) << endl << endl;
     rg.printGraph();
+    rg.saveDOT("graph.dot");
     
 
     return 0;

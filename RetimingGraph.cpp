@@ -2,6 +2,7 @@
 #include <boost/graph/graph_utility.hpp>
 #include <boost/graph/topological_sort.hpp>
 #include <boost/graph/johnson_all_pairs_shortest.hpp>
+#include <boost/graph/graphviz.hpp>
 
 #include "RetimingGraph.hpp"
 
@@ -9,6 +10,7 @@
 #include <iterator>
 #include <algorithm>
 #include <vector>
+#include <fstream>
 
 using std::cout; using std::endl;
 
@@ -48,6 +50,17 @@ void RetimingGraph::printGraph()
 		auto dest = target(*eStart, originalGraph);
 		cout << src << " -> " << dest << " : " << originalGraph[*eStart].w << endl;
 	}
+}
+
+void RetimingGraph::saveDOT(std::string path)
+{
+	std::filebuf fb;
+	fb.open(path, std::ios::out);
+	std::ostream os(&fb);
+
+	write_graphviz(os, originalGraph,
+				   make_label_writer(get(&VertexData::d, originalGraph)),
+				   make_label_writer(get(&EdgeData::w, originalGraph)));
 }
 
 void RetimingGraph::applyRetiming(const std::vector<int>& r, bool undo)
