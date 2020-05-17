@@ -1,8 +1,4 @@
 #include <iostream>
-#include <boost/graph/adjacency_list.hpp> 
-#include <boost/graph/graph_utility.hpp>
-
-using namespace boost;
 using namespace std;
 
 #include "RetimingGraph.hpp"
@@ -31,10 +27,10 @@ int main()
     rg.addEdge(6, 7, 0);
     rg.addEdge(7, 0, 0);
 
-    std::vector<int> dummy;
-    cout << "CP: " << rg.CP(dummy) << endl;
+    cout << "CP: " << rg.CP() << endl;
+    rg.printGraph();
     rg.OPT(false);
-    cout << "Retimed CP: " << rg.CP(dummy) << endl << endl;
+    cout << "Retimed CP: " << rg.CP() << endl << endl;
     rg.printGraph();
     rg.saveDOT("graph.dot");
     

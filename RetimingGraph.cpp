@@ -1,7 +1,7 @@
 #include <boost/graph/filtered_graph.hpp>
-#include <boost/graph/graph_utility.hpp>
 #include <boost/graph/topological_sort.hpp>
 #include <boost/graph/johnson_all_pairs_shortest.hpp>
+#include <boost/graph/bellman_ford_shortest_paths.hpp>
 #include <boost/graph/graphviz.hpp>
 
 #include "RetimingGraph.hpp"
@@ -70,7 +70,7 @@ void RetimingGraph::applyRetiming(const std::vector<int>& r, bool undo)
 	{
 		auto src = source(*eStart, originalGraph);
 		auto dest = target(*eStart, originalGraph);
-		
+
 		if (undo == false)
 			originalGraph[*eStart].w += r[dest] - r[src];
 		else
@@ -83,7 +83,7 @@ void RetimingGraph::applyRetiming(const std::vector<int>& r, bool undo)
  * Compute the clock period of a circuit
 */
 int RetimingGraph::CP(std::vector<int>& delta)
-{	
+{
 	// Step 1
 	filtered_graph<RGraph, ZeroEdgePredicate> filteredGraph(originalGraph, ZeroEdgePredicate(originalGraph));
 
@@ -111,6 +111,12 @@ int RetimingGraph::CP(std::vector<int>& delta)
 	return *std::max_element(delta.begin(), delta.end());
 }
 
+int RetimingGraph::CP(void)
+{
+	std::vector<int> dummyDelta;
+	return CP(dummyDelta);
+}
+
 /* Algorithm WD (page 12)
  *
  * Compute W and D
@@ -129,9 +135,9 @@ void RetimingGraph::WD(int** W, int** D)
 	// Step 2
 	int V = num_vertices(originalGraph);
 	weightWD** distance_matrix;
-	distance_matrix = (weightWD**) malloc(V * sizeof(*distance_matrix));
+	distance_matrix = (weightWD**)malloc(V * sizeof(*distance_matrix));
 	for (int i = 0; i < V; i++)
-		distance_matrix[i] = (weightWD*) malloc(V * sizeof(**distance_matrix));
+		distance_matrix[i] = (weightWD*)malloc(V * sizeof(**distance_matrix));
 
 	auto cmp = [](weightWD first, weightWD second)
 	{
@@ -174,12 +180,14 @@ void RetimingGraph::WD(int** W, int** D)
 /* Algorithm OPT
  *
  * Runs either OPT1 or OPT2 based on how the retiming r is computed
+ * opt == true runs OPT1
+ * opt == false runs OPT2
 */
 void RetimingGraph::OPT(bool opt)
 {
 	// Step 1
 	int V = num_vertices(originalGraph);
-	int **W, **D;
+	int** W, ** D;
 	W = (int**)malloc(V * sizeof(*W));
 	D = (int**)malloc(V * sizeof(*D));
 	for (int i = 0; i < V; i++)
@@ -200,10 +208,10 @@ void RetimingGraph::OPT(bool opt)
 		return first.D < second.D;
 	};
 	std::sort(dE.begin(), dE.end(), cmp);
-	
+
 	// Step 3
 	std::vector<int> r;
-	r = opt ? OPT1(W, D, dE, cmp) : OPT2(W, D, dE);
+	r = opt ? OPT1(W, D, dE, cmp) : OPT2(dE);
 
 	// Step 4
 	applyRetiming(r);
@@ -216,12 +224,12 @@ void RetimingGraph::OPT(bool opt)
 	free(W);
 	free(D);
 }
- 
+
 /* Algorithm FEAS (page 16)
  *
  * Feasible clock period test
 */
-std::vector<int> RetimingGraph::FEAS(int c) // std::vector has move-semantics, no performance decrease in returning a vector
+std::vector<int> RetimingGraph::FEAS(int c)
 {
 	// Step 1
 	int V = num_vertices(originalGraph);
@@ -247,12 +255,13 @@ std::vector<int> RetimingGraph::FEAS(int c) // std::vector has move-semantics, n
 				r[v]++;
 		}
 	}
-	
+
 	applyRetiming(r);
+	int testC = CP();
+	applyRetiming(r, true);
 
 	// Step 3
-	std::vector<int> dummy;
-	if (CP(dummy) > c) // no feasible retiming exists
+	if (testC > c) // no feasible retiming exists
 		return std::vector<int>();
 	else
 		return r;
@@ -310,12 +319,11 @@ std::vector<int> RetimingGraph::OPT1(int** W, int** D, std::vector<dElements>& d
 
 		// Step 4
 		if (bellman_ford_shortest_paths(constraintGraph, VconstraintGraph, distance_map(&distance[0])))
-		{
 			return distance;
-			break;
-		}
 	}
 
+	// no legal retiming found
+	cout << "No legal retiming found!" << endl;
 	return std::vector<int>();
 }
 
@@ -323,19 +331,24 @@ std::vector<int> RetimingGraph::OPT1(int** W, int** D, std::vector<dElements>& d
  *
  * Clock period minimization
 */
-std::vector<int> RetimingGraph::OPT2(int** W, int** D, std::vector<dElements>& dE)
+std::vector<int> RetimingGraph::OPT2(std::vector<dElements>& dE)
 {
 	std::vector<int> r;
-
 	std::vector<dElements>::iterator it;
-	for (it = dE.begin(); it != dE.end(); ++it) // TODO: it mi da molte copie con stesso it->D, non necessarie qui
+	std::set<int> de;
+
+	// add elements into an ordered set so that we don't check the same c more than once
+	for (it = dE.begin(); it != dE.end(); ++it)
+		de.insert(it->D);
+	
+	for (auto c : de)
 	{
-		r = FEAS(it->D);
+		r = FEAS(c);
 		if (r.size() > 0)
-		{
 			return r;
-		}
 	}
 
+	// no legal retiming found
+	cout << "No legal retiming found!" << endl;
 	return std::vector<int>();
 }

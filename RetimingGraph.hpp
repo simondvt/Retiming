@@ -1,33 +1,13 @@
-#pragma once
+#ifndef RETIMING_GRAPH
+#define RETIMING_GRAPH
 
 #include <boost/graph/adjacency_list.hpp> 
 using namespace boost;
 
-
-// weightning for WD algorithm
+// weighing for WD algorithm
 struct weightWD
 {
 	int we, du;
-
-	//weightWD(int we_, int du_) : we(we_), du(du_) {}
-	//weightWD() : we(0), du(0) {}
-
-	//bool operator < (const weightWD& other) const
-	//{
-	//	if (we < other.we) return true;
-	//	if (we == other.we && du < other.du) return true;
-	//
-	//	return false;
-	//}
-
-	//weightWD operator + (const weightWD& other) const
-	//{
-	//	weightWD res;
-	//	res.we = we + other.we;
-	//	res.du = du + other.du;
-	//
-	//	return res;
-	//}
 
 	bool operator == (const weightWD& other) const
 	{
@@ -39,7 +19,7 @@ struct weightWD
 		weightWD res;
 		res.we = we - other.we;
 		res.du = du - other.du;
-		
+
 		return res;
 	}
 };
@@ -53,7 +33,7 @@ struct VertexData
 // Edge bundle property
 struct EdgeData
 {
-	int w; // number of registers
+	int w;	      // number of registers
 	weightWD wwd; // used in WD algorithm
 };
 
@@ -96,15 +76,17 @@ public:
 
 	// Compute the clock period of a circuit
 	int CP(std::vector<int>& delta);
+	int CP(void);
 	// Compute W and D
-	void WD(int **W, int **D);
+	void WD(int** W, int** D);
 	// Clock period minimization
 	void OPT(bool opt = true);
 	// Feasible clock period test
 	std::vector<int> FEAS(int c);
 	// OPT1
-	std::vector<int> OPT1(int **W, int **D, std::vector<dElements>& dE, bool cmp(dElements first, dElements second));
+	std::vector<int> OPT1(int** W, int** D, std::vector<dElements>& dE, bool cmp(dElements first, dElements second));
 	// OPT2
-	std::vector<int> OPT2(int** W, int** D, std::vector<dElements>& dE);
+	std::vector<int> OPT2(std::vector<dElements>& dE);
 };
 
+#endif // RETIMING_GRAPH
