@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <vector>
 #include <fstream>
+#include <exception>
 
 using std::cout; using std::endl;
 
@@ -33,11 +34,17 @@ private:
 
 void RetimingGraph::addVertex(int d)
 {
+	if (d < 0) // D1 violated
+		throw std::runtime_error("Propagation delay must be nonnegative");
+
 	add_vertex(VertexData{ d }, originalGraph);
 }
 
 void RetimingGraph::addEdge(Vertex_d src, Vertex_d dest, int w)
 {
+	if (w < 0) // W1 violated
+		throw std::runtime_error("Register count must be nonnegative");
+
 	add_edge(src, dest, EdgeData{ w }, originalGraph);
 }
 
@@ -89,7 +96,14 @@ int RetimingGraph::CP(std::vector<int>& delta)
 
 	// Step 2
 	std::vector<Vertex_d> vertices;
-	topological_sort(filteredGraph, std::back_inserter(vertices));
+	try
+	{
+		topological_sort(filteredGraph, std::back_inserter(vertices));
+	}
+	catch (not_a_dag& e) // W2 violated
+	{
+		throw std::runtime_error("The zero edges graph is not a DAG");
+	}
 
 	// Step 3
 	delta.resize((vertices.size()));
@@ -257,11 +271,11 @@ std::vector<int> RetimingGraph::FEAS(int c)
 	}
 
 	applyRetiming(r);
-	int testC = CP();
+	int testCP = CP();
 	applyRetiming(r, true);
 
 	// Step 3
-	if (testC > c) // no feasible retiming exists
+	if (testCP > c)
 		return std::vector<int>();
 	else
 		return r;
@@ -274,6 +288,8 @@ std::vector<int> RetimingGraph::FEAS(int c)
 */
 std::vector<int> RetimingGraph::OPT1(int** W, int** D, std::vector<dElements>& dE, bool cmp(dElements first, dElements second))
 {
+	adjacency_list<vecS, vecS, directedS, no_property, property<edge_weight_t, int>> constraintGraph;
+
 	std::vector<dElements>::iterator it;
 	for (it = dE.begin(); it != dE.end(); ++it)
 	{
@@ -322,9 +338,7 @@ std::vector<int> RetimingGraph::OPT1(int** W, int** D, std::vector<dElements>& d
 			return distance;
 	}
 
-	// no legal retiming found
-	cout << "No legal retiming found!" << endl;
-	return std::vector<int>();
+	return std::vector<int>(num_vertices(originalGraph), 0);
 }
 
 /* Algorithm OPT2 (page 17)
@@ -348,7 +362,5 @@ std::vector<int> RetimingGraph::OPT2(std::vector<dElements>& dE)
 			return r;
 	}
 
-	// no legal retiming found
-	cout << "No legal retiming found!" << endl;
-	return std::vector<int>();
+	return std::vector<int>(num_vertices(originalGraph), 0);;
 }

@@ -140,8 +140,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp" />
     <ClCompile Include="RetimingGraph.cpp" />
+    <ClCompile Include="test\test1.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="RetimingGraph.hpp" />

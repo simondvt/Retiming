@@ -62,7 +62,6 @@ class RetimingGraph
 {
 private:
 	RGraph originalGraph;
-	adjacency_list<vecS, vecS, directedS, no_property, property<edge_weight_t, int>> constraintGraph;
 
 public:
 	void addVertex(int d);

@@ -27,9 +27,9 @@ int main()
     rg.addEdge(6, 7, 0);
     rg.addEdge(7, 0, 0);
 
-    cout << "CP: " << rg.CP() << endl;
     rg.printGraph();
-    rg.OPT(false);
+    cout << "CP: " << rg.CP() << endl;
+    rg.OPT(true);
     cout << "Retimed CP: " << rg.CP() << endl << endl;
     rg.printGraph();
     rg.saveDOT("graph.dot");
