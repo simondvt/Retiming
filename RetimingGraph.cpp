@@ -232,14 +232,15 @@ void RetimingGraph::OPT(optEnum opt)
 
 	std::vector<int> retiming;
 
+	// search in the interval [low, high)
+	// I binary search for a clock period c such that
+	//			* a legal retiming exists for clock period = c
+	//			* a legal retiming does not exists for clock period < c
 	int low = 0, high = d.size();
 	int check;
-	
-	// search in the interval [low, high)
 	while (low < high)
 	{
 		check = low + (high - low) / 2;
-		cout << "check = " << check << endl;
 		bool previousNotLegal = true;
 
 		if (opt == optEnum::OPT1)

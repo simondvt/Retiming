@@ -6,6 +6,36 @@
 #include <boost/test/unit_test.hpp>
 
 #include "../RetimingGraph.hpp"
+#include <ctime>
+#include <cstdlib>
+#include <iostream>
+
+BOOST_AUTO_TEST_CASE(random)
+{
+    for (int t = 0; t < 50; t++)
+    {
+        srand(t*100);
+
+        RetimingGraph rg;
+        const int V = 20, E = 50;
+        const int maxValue = 500;
+
+        for (int i = 0; i < V; i++)
+        {
+            rg.addVertex(rand() % maxValue);
+        }
+        for (int i = 0; i < E; i++)
+        {
+            rg.addEdge(rand() % V, rand() % V, rand() % maxValue);
+        }
+
+        int originalCP = rg.CP();
+        rg.OPT(RetimingGraph::optEnum::OPT1);
+        int remitedCP = rg.CP();
+
+        BOOST_CHECK_LE(remitedCP, originalCP);
+    }
+}
 
 BOOST_AUTO_TEST_CASE(Correlator1CP)
 {
@@ -58,7 +88,7 @@ BOOST_AUTO_TEST_CASE(Correlator1OPT1)
     rg.addEdge(6, 7, 0);
     rg.addEdge(7, 0, 0);
 
-    rg.OPT(false);
+    rg.OPT(RetimingGraph::optEnum::OPT1);
 
     BOOST_CHECK_EQUAL(rg.CP(), 13);
 }
@@ -87,7 +117,7 @@ BOOST_AUTO_TEST_CASE(Correlator1OPT2)
     rg.addEdge(6, 7, 0);
     rg.addEdge(7, 0, 0);
 
-    rg.OPT(true);
+    rg.OPT(RetimingGraph::optEnum::OPT1);
 
     BOOST_CHECK_EQUAL(rg.CP(), 13);
 }

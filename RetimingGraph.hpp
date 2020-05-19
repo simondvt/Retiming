@@ -83,7 +83,7 @@ public:
 
 	// Clock period minimization
 	void OPT(optEnum opt);
-	// OPT2 clocl period test
+	// OPT2 clock period test
 	std::vector<int> FEAS(int c);
 	// OPT1 clock period test
 	std::vector<int> bellmanFord(int** W, std::vector<dElements>& dE, int c, bool cmp(dElements first, dElements second));
