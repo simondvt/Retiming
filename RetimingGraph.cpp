@@ -194,10 +194,8 @@ void RetimingGraph::WD(int** W, int** D)
 /* Algorithm OPT
  *
  * Runs either OPT1 or OPT2 based on how the retiming r is computed
- * opt == true runs OPT1
- * opt == false runs OPT2
 */
-void RetimingGraph::OPT(bool opt)
+void RetimingGraph::OPT(optEnum opt)
 {
 	// Step 1
 	int V = num_vertices(originalGraph);
@@ -224,11 +222,54 @@ void RetimingGraph::OPT(bool opt)
 	std::sort(dE.begin(), dE.end(), cmp);
 
 	// Step 3
-	std::vector<int> r;
-	r = opt ? OPT1(W, D, dE, cmp) : OPT2(dE);
+	// add elements into an ordered set so that we don't check the same c more than once
+	std::set<int> s;
+	for (std::vector<dElements>::iterator it = dE.begin(); it != dE.end(); ++it)
+		s.insert(it->D);
+
+	std::vector<int> d;
+	d.assign(s.begin(), s.end());
+
+	std::vector<int> retiming;
+
+	int low = 0, high = d.size();
+	int check;
+	
+	// search in the interval [low, high)
+	while (low < high)
+	{
+		check = low + (high - low) / 2;
+		cout << "check = " << check << endl;
+		bool previousNotLegal = true;
+
+		if (opt == optEnum::OPT1)
+		{
+			retiming = bellmanFord(W, dE, d[check], cmp);
+			if (check > 0)
+				previousNotLegal = bellmanFord(W, dE, d[check - 1], cmp).size() == 0;
+		}
+		else
+		{
+			retiming = FEAS(d[check]);
+			if (check > 0)
+				previousNotLegal = FEAS(d[check - 1]).size() == 0;
+		}
+
+		if (retiming.size() > 0)
+		{
+			if (previousNotLegal) // found minimal legal retiming
+				break;
+
+			high = check;
+		}
+		else
+		{
+			low = check + 1;
+		}
+	}
 
 	// Step 4
-	applyRetiming(r);
+	applyRetiming(retiming);
 
 	for (int i = 0; i < V; i++)
 	{
@@ -241,7 +282,7 @@ void RetimingGraph::OPT(bool opt)
 
 /* Algorithm FEAS (page 16)
  *
- * Feasible clock period test
+ * OPT2 clock period test
 */
 std::vector<int> RetimingGraph::FEAS(int c)
 {
@@ -284,83 +325,53 @@ std::vector<int> RetimingGraph::FEAS(int c)
 
 /* Algorithm OPT1 (page 14)
  *
- * Clock period minimization
+ * OPT1 clock period test
+ * bellman_ford for constraintGraph (https://www.oreilly.com/library/view/vlsi-digital-signal/9780471241867/sec-4.3.html)
 */
-std::vector<int> RetimingGraph::OPT1(int** W, int** D, std::vector<dElements>& dE, bool cmp(dElements first, dElements second))
+std::vector<int> RetimingGraph::bellmanFord(int** W, std::vector<dElements>& dE, int c, bool cmp(dElements first, dElements second))
 {
 	adjacency_list<vecS, vecS, directedS, no_property, property<edge_weight_t, int>> constraintGraph;
 
-	std::vector<dElements>::iterator it;
-	for (it = dE.begin(); it != dE.end(); ++it)
+	constraintGraph.clear();
+
+	auto startRange = std::upper_bound(dE.begin(), dE.end(), dElements{0, 0, c}, cmp); // returns iterator to first element greater than c
+	// add edge (v -> u) when D[u][v] > c
+	for (; startRange != dE.end(); ++startRange)
+		add_edge(startRange->dest, startRange->src, W[startRange->src][startRange->dest] - 1, constraintGraph);
+
+	// add edge (v -> u) for every edge (u -> v) in original graph
+	edgeIt eStart, eEnd;
+	for (tie(eStart, eEnd) = edges(originalGraph); eStart != eEnd; ++eStart)
 	{
-		constraintGraph.clear();
+		auto src = source(*eStart, originalGraph);
+		auto dest = target(*eStart, originalGraph);
+		int originalWeight = originalGraph[*eStart].w;
 
-		// STL's binary search is not suitable here beacuse it does not return a pointer
-		// to the matching elements, while upper_bound does (always in O(log n))
-		auto startRange = std::upper_bound(dE.begin(), dE.end(), *it, cmp); // returns iterator to first element greater than it->D
-		// add edge (v -> u) when D[u][v] > c
-		for (; startRange != dE.end(); ++startRange)
-			add_edge(startRange->dest, startRange->src, W[startRange->src][startRange->dest] - 1, constraintGraph);
-
-		// add edge (v -> u) for every edge (u -> v) in original graph
-		edgeIt eStart, eEnd;
-		for (tie(eStart, eEnd) = edges(originalGraph); eStart != eEnd; ++eStart)
+		auto e = edge(dest, src, constraintGraph);
+		if (e.second) // if edge already exists in contraintGraph
 		{
-			auto src = source(*eStart, originalGraph);
-			auto dest = target(*eStart, originalGraph);
-			int originalWeight = originalGraph[*eStart].w;
-
-			auto e = edge(dest, src, constraintGraph);
-			if (e.second) // if edge already exists in contraintGraph
-			{
-				int existingWeight = get(edge_weight_t(), constraintGraph, e.first);
-				put(edge_weight_t(), constraintGraph, e.first, std::min(existingWeight, originalWeight));
-			}
-			else
-			{
-				add_edge(dest, src, originalWeight, constraintGraph);
-			}
+			int existingWeight = get(edge_weight_t(), constraintGraph, e.first);
+			put(edge_weight_t(), constraintGraph, e.first, std::min(existingWeight, originalWeight));
 		}
-
-		// add one more vertex with zero edges 
-		// lastVertex has the biggest vertex descriptor
-		auto lastVertex = add_vertex(constraintGraph);
-		for (int i = 0; i < lastVertex; i++)
-			add_edge(lastVertex, i, 0, constraintGraph);
-
-		// bellman_ford for constraintGraph (https://www.oreilly.com/library/view/vlsi-digital-signal/9780471241867/sec-4.3.html)
-		int VconstraintGraph = num_vertices(constraintGraph);
-		std::vector<int> distance(VconstraintGraph, std::numeric_limits<int>::max());
-		distance[lastVertex] = 0; // use lastVertex as the source at distance 0
-
-		// Step 4
-		if (bellman_ford_shortest_paths(constraintGraph, VconstraintGraph, distance_map(&distance[0])))
-			return distance;
+		else
+		{
+			add_edge(dest, src, originalWeight, constraintGraph);
+		}
 	}
 
-	return std::vector<int>(num_vertices(originalGraph), 0);
-}
+	// add one more vertex with zero edges 
+	// lastVertex has the biggest vertex descriptor
+	auto lastVertex = add_vertex(constraintGraph);
+	for (int i = 0; i < lastVertex; i++)
+		add_edge(lastVertex, i, 0, constraintGraph);
 
-/* Algorithm OPT2 (page 17)
- *
- * Clock period minimization
-*/
-std::vector<int> RetimingGraph::OPT2(std::vector<dElements>& dE)
-{
-	std::vector<int> r;
-	std::vector<dElements>::iterator it;
-	std::set<int> de;
+	int VconstraintGraph = num_vertices(constraintGraph);
+	std::vector<int> distance(VconstraintGraph, std::numeric_limits<int>::max());
+	distance[lastVertex] = 0; // use lastVertex as the source at distance 0
 
-	// add elements into an ordered set so that we don't check the same c more than once
-	for (it = dE.begin(); it != dE.end(); ++it)
-		de.insert(it->D);
-	
-	for (auto c : de)
-	{
-		r = FEAS(c);
-		if (r.size() > 0)
-			return r;
-	}
+	// Step 4
+	if (bellman_ford_shortest_paths(constraintGraph, VconstraintGraph, distance_map(&distance[0])))
+		return distance;
 
-	return std::vector<int>(num_vertices(originalGraph), 0);;
+	return std::vector<int>();
 }

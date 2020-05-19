@@ -78,14 +78,15 @@ public:
 	int CP(void);
 	// Compute W and D
 	void WD(int** W, int** D);
+
+	enum class optEnum {OPT1, OPT2};
+
 	// Clock period minimization
-	void OPT(bool opt = true);
-	// Feasible clock period test
+	void OPT(optEnum opt);
+	// OPT2 clocl period test
 	std::vector<int> FEAS(int c);
-	// OPT1
-	std::vector<int> OPT1(int** W, int** D, std::vector<dElements>& dE, bool cmp(dElements first, dElements second));
-	// OPT2
-	std::vector<int> OPT2(std::vector<dElements>& dE);
+	// OPT1 clock period test
+	std::vector<int> bellmanFord(int** W, std::vector<dElements>& dE, int c, bool cmp(dElements first, dElements second));
 };
 
 #endif // RETIMING_GRAPH

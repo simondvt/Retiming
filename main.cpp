@@ -29,10 +29,10 @@ int main()
 
     rg.printGraph();
     cout << "CP: " << rg.CP() << endl;
-    rg.OPT(true);
+    rg.OPT(RetimingGraph::optEnum::OPT2);
     cout << "Retimed CP: " << rg.CP() << endl << endl;
     rg.printGraph();
-    rg.saveDOT("graph.dot");
+    //rg.saveDOT("graph.dot");
     
 
     return 0;

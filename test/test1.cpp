@@ -1,4 +1,8 @@
-#define BOOST_TEST_MODULE MyTest
+/*
+ * Tests for Correlator 1 (Figure 3, pag 5)
+ */
+
+#define BOOST_TEST_MODULE Correlator1
 #include <boost/test/unit_test.hpp>
 
 #include "../RetimingGraph.hpp"
@@ -6,7 +10,7 @@
 BOOST_AUTO_TEST_CASE(Correlator1CP)
 {
     RetimingGraph rg;
-    // Correlator 1 (Figure 3, pag 5)
+    
     rg.addVertex(0); // Vh
     rg.addVertex(3); // V1
     rg.addVertex(3); // V2
@@ -33,7 +37,7 @@ BOOST_AUTO_TEST_CASE(Correlator1CP)
 BOOST_AUTO_TEST_CASE(Correlator1OPT1)
 {
     RetimingGraph rg;
-    // Correlator 1 (Figure 3, pag 5)
+    
     rg.addVertex(0); // Vh
     rg.addVertex(3); // V1
     rg.addVertex(3); // V2
@@ -62,7 +66,7 @@ BOOST_AUTO_TEST_CASE(Correlator1OPT1)
 BOOST_AUTO_TEST_CASE(Correlator1OPT2)
 {
     RetimingGraph rg;
-    // Correlator 1 (Figure 3, pag 5)
+    
     rg.addVertex(0); // Vh
     rg.addVertex(3); // V1
     rg.addVertex(3); // V2
