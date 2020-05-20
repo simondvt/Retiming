@@ -38,13 +38,13 @@ struct EdgeData
 };
 
 // Struct which contains (u, v, D(u, v))
-// Used in OPT1 algorithm to sort D matrix and perform binary search on it
+// Used in OPT1 algorithm
 struct dElements
 {
 	int src, dest, D;
 };
 
-// the graph is directed, but I use bidirectional so that I can use "in_edges" in CP algorithm
+// the graph is directed, but I use bidirectional so that I can use "in_edges" in CP algorithm at constant cost
 using RGraph = adjacency_list<vecS, vecS, bidirectionalS, VertexData, EdgeData>;
 // Vertex descriptor
 using Vertex_d = graph_traits<RGraph>::vertex_descriptor;
@@ -66,9 +66,9 @@ private:
 public:
 	void addVertex(int d);
 	void addEdge(Vertex_d src, Vertex_d dest, int w);
-
 	void printGraph();
 	void saveDOT(std::string path);
+
 	// Given a retiming r: V -> Z, it applies it to the graph
 	// If undo == true it undoes the retiming
 	void applyRetiming(const std::vector<int>& r, bool undo = false);
@@ -76,13 +76,14 @@ public:
 	// Compute the clock period of a circuit
 	int CP(std::vector<int>& delta);
 	int CP(void);
+
 	// Compute W and D
 	void WD(int** W, int** D);
 
 	enum class optEnum {OPT1, OPT2};
-
 	// Clock period minimization
 	void OPT(optEnum opt);
+
 	// OPT2 clock period test
 	std::vector<int> FEAS(int c);
 	// OPT1 clock period test

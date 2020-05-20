@@ -193,7 +193,7 @@ void RetimingGraph::WD(int** W, int** D)
 
 /* Algorithm OPT
  *
- * Runs either OPT1 or OPT2 based on how the retiming r is computed
+ * Runs either OPT1 or OPT2 based on how the retiming is computed
 */
 void RetimingGraph::OPT(optEnum opt)
 {
@@ -210,7 +210,7 @@ void RetimingGraph::OPT(optEnum opt)
 	WD(W, D);
 
 	// Step 2
-	std::vector<dElements> dE;
+	std::vector<dElements> dE; // auxiliary data structure for OPT1
 	for (int i = 0; i < V; i++)
 		for (int j = 0; j < V; j++)
 			dE.push_back({ i, j, D[i][j] });
@@ -333,9 +333,7 @@ std::vector<int> RetimingGraph::bellmanFord(int** W, std::vector<dElements>& dE,
 {
 	adjacency_list<vecS, vecS, directedS, no_property, property<edge_weight_t, int>> constraintGraph;
 
-	constraintGraph.clear();
-
-	auto startRange = std::upper_bound(dE.begin(), dE.end(), dElements{0, 0, c}, cmp); // returns iterator to first element greater than c
+	auto startRange = std::upper_bound(dE.begin(), dE.end(), dElements{0, 0, c}, cmp); // returns iterator to first element greater than c in O(log n)
 	// add edge (v -> u) when D[u][v] > c
 	for (; startRange != dE.end(); ++startRange)
 		add_edge(startRange->dest, startRange->src, W[startRange->src][startRange->dest] - 1, constraintGraph);
@@ -361,12 +359,11 @@ std::vector<int> RetimingGraph::bellmanFord(int** W, std::vector<dElements>& dE,
 	}
 
 	// add one more vertex with zero edges 
-	// lastVertex has the biggest vertex descriptor
 	auto lastVertex = add_vertex(constraintGraph);
-	for (int i = 0; i < lastVertex; i++)
+	int VconstraintGraph = num_vertices(constraintGraph);
+	for (int i = 0; i < VconstraintGraph; i++)
 		add_edge(lastVertex, i, 0, constraintGraph);
 
-	int VconstraintGraph = num_vertices(constraintGraph);
 	std::vector<int> distance(VconstraintGraph, std::numeric_limits<int>::max());
 	distance[lastVertex] = 0; // use lastVertex as the source at distance 0
 
