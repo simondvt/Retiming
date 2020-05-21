@@ -87,7 +87,7 @@ public:
 	// OPT2 clock period test
 	std::vector<int> FEAS(int c);
 	// OPT1 clock period test
-	std::vector<int> bellmanFord(int** W, std::vector<dElements>& dE, int c, bool cmp(dElements first, dElements second));
+	std::vector<int> OPT1(int** W, std::vector<dElements>& dE, int c, bool cmp(dElements first, dElements second));
 };
 
 #endif // RETIMING_GRAPH

@@ -199,7 +199,7 @@ void RetimingGraph::OPT(optEnum opt)
 {
 	// Step 1
 	int V = num_vertices(originalGraph);
-	int** W, ** D;
+	int **W, **D;
 	W = (int**)malloc(V * sizeof(*W));
 	D = (int**)malloc(V * sizeof(*D));
 	for (int i = 0; i < V; i++)
@@ -227,7 +227,7 @@ void RetimingGraph::OPT(optEnum opt)
 	for (std::vector<dElements>::iterator it = dE.begin(); it != dE.end(); ++it)
 		s.insert(it->D);
 
-	std::vector<int> d;
+	std::vector<int> d; // use this vector for binary search
 	d.assign(s.begin(), s.end());
 
 	std::vector<int> retiming;
@@ -245,9 +245,9 @@ void RetimingGraph::OPT(optEnum opt)
 
 		if (opt == optEnum::OPT1)
 		{
-			retiming = bellmanFord(W, dE, d[check], cmp);
+			retiming = OPT1(W, dE, d[check], cmp);
 			if (check > 0)
-				previousNotLegal = bellmanFord(W, dE, d[check - 1], cmp).size() == 0;
+				previousNotLegal = OPT1(W, dE, d[check - 1], cmp).size() == 0;
 		}
 		else
 		{
@@ -329,7 +329,7 @@ std::vector<int> RetimingGraph::FEAS(int c)
  * OPT1 clock period test
  * bellman_ford for constraintGraph (https://www.oreilly.com/library/view/vlsi-digital-signal/9780471241867/sec-4.3.html)
 */
-std::vector<int> RetimingGraph::bellmanFord(int** W, std::vector<dElements>& dE, int c, bool cmp(dElements first, dElements second))
+std::vector<int> RetimingGraph::OPT1(int** W, std::vector<dElements>& dE, int c, bool cmp(dElements first, dElements second))
 {
 	adjacency_list<vecS, vecS, directedS, no_property, property<edge_weight_t, int>> constraintGraph;
 
