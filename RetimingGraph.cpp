@@ -13,7 +13,8 @@
 #include <fstream>
 #include <exception>
 
-using std::cout; using std::endl;
+using std::cout; 
+using std::endl;
 
 // Edge predicate for filtering in CP algorithm
 // Only zero weight edges are allowed in the filtered graph
@@ -210,7 +211,7 @@ void RetimingGraph::OPT(optEnum opt)
 	WD(W, D);
 
 	// Step 2
-	std::vector<dElements> dE; // auxiliary data structure for OPT1
+	std::vector<dElements> dE; // auxiliary data structure for OPT1, used when inserting edges into the constraint graph
 	for (int i = 0; i < V; i++)
 		for (int j = 0; j < V; j++)
 			dE.push_back({ i, j, D[i][j] });

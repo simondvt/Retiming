@@ -44,7 +44,7 @@ struct dElements
 	int src, dest, D;
 };
 
-// the graph is directed, but I use bidirectional so that I can use "in_edges" in CP algorithm at constant cost
+// the graph is directed, but I use bidirectional so that I can use "in_edges()" in CP algorithm at constant cost
 using RGraph = adjacency_list<vecS, vecS, bidirectionalS, VertexData, EdgeData>;
 // Vertex descriptor
 using Vertex_d = graph_traits<RGraph>::vertex_descriptor;
