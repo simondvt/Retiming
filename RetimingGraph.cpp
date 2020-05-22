@@ -223,10 +223,16 @@ void RetimingGraph::OPT(optEnum opt)
 	std::sort(dE.begin(), dE.end(), cmp);
 
 	// Step 3
+	// the maximum element on the diagonal of D is a lower bound for the clock period
+	int lower_bound = 0;
+	for (int i = 0; i < V; i++)
+		lower_bound = std::max(lower_bound, D[i][i]);
+
 	// add elements into an ordered set so that we don't check the same c more than once
 	std::set<int> s;
 	for (std::vector<dElements>::iterator it = dE.begin(); it != dE.end(); ++it)
-		s.insert(it->D);
+		if (it->D >= lower_bound)
+			s.insert(it->D);
 
 	std::vector<int> d; // use this vector for binary search
 	d.assign(s.begin(), s.end());
@@ -236,7 +242,7 @@ void RetimingGraph::OPT(optEnum opt)
 	// search in the interval [low, high)
 	// I binary search for a clock period c such that
 	//			* a legal retiming exists for clock period = c
-	//			* a legal retiming does not exists for clock period < c
+	//			* a legal retiming does not exist for clock period < c
 	int low = 0, high = d.size();
 	int check;
 	while (low < high)
